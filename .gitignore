@@ -1,0 +1,22 @@
+# Build output
+bin/
+obj/
+
+# Dane użytkownika — nie wrzucaj na GitHub
+car_rpm_data.json
+
+# iCUE SDK DLL — pobierz osobno z https://github.com/CorsairOfficial/cue-sdk/releases
+iCUESDK.dll
+*.dll
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Rider
+.idea/
+
+# System
+.DS_Store
+Thumbs.db
