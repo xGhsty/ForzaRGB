@@ -10,6 +10,8 @@
     <RootNamespace>ForzaRGB</RootNamespace>
     <Platforms>x64</Platforms>
     <ApplicationIcon>app.ico</ApplicationIcon>
+	<RuntimeIdentifier>win-x64</RuntimeIdentifier>
+	<SelfContained>true</SelfContained>
   </PropertyGroup>
 
 </Project>

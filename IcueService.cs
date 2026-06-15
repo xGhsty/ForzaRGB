@@ -33,6 +33,7 @@ public class IcueService : IDisposable
 
     // Redline learning
     private int                    _trackedCarOrdinal    = -1;
+    private float                  _trackedMaxRpm        = 0f;
     private float                  _observedMaxRpm       = 0f;
     private bool                   _rpmLearned           = false;
     private int                    _lastGear             = -1;
@@ -195,9 +196,10 @@ public class IcueService : IDisposable
     {
         var (r, g, b) = RpmColorMapper.GetColor(carClass, rpmNormalized);
 
-        if (carOrdinal != _trackedCarOrdinal)
+        if (carOrdinal != _trackedCarOrdinal || maxRpm != _trackedMaxRpm)
         {
             _trackedCarOrdinal   = carOrdinal;
+            _trackedMaxRpm       = maxRpm;
             float? saved         = _rpmDb.GetMaxRpm(carOrdinal, maxRpm);
             _observedMaxRpm      = saved ?? 0f;
             _rpmLearned          = saved.HasValue;
@@ -211,13 +213,13 @@ public class IcueService : IDisposable
             if (saved.HasValue)
                 Console.WriteLine($"[DB] Car #{carOrdinal} — saved redline: {saved:F0} RPM");
             else
-                Console.WriteLine($"[DB] Car #{carOrdinal} — unknown car, learning redline...");
+                Console.WriteLine($"[DB] Car #{carOrdinal} — unknown config, learning redline...");
         }
 
         // Sample RPM at gear change — only when previous gear had high RPM
         if (gear != _lastGear)
         {
-            bool prevGearValid = _lastGear >= 2 && _lastGear <= 10;
+            bool prevGearValid = _lastGear >= 2 && _lastGear <= 10 && _lastGear != 11;
             bool prevRpmValid  = _lastRpm >= maxRpm * 0.80f && _lastRpm <= maxRpm * 0.93f;
 
             if (prevGearValid && prevRpmValid && _fakeReadingCooldown == 0)
@@ -254,8 +256,8 @@ public class IcueService : IDisposable
 
         _lastRpm = currentRpm;
 
-        // Blink thresholds
-        bool isFirstGear = gear == 1 || gear > 10;
+        // Blink thresholds — skip learning on gear 1, reverse (0) and neutral (11)
+        bool isFirstGear = gear == 1 || gear == 0 || gear == 11;
         float threshold1 = maxRpm * 0.80f;
         float threshold2 = _rpmLearned ? _observedMaxRpm * 0.92f : maxRpm * 0.87f;
         float threshold3 = _rpmLearned ? _observedMaxRpm * 0.98f : maxRpm * 0.93f;
@@ -279,12 +281,23 @@ public class IcueService : IDisposable
         if (!_connected || _fanDeviceId == null || _fanLedIds == null) return;
         StopBlink();
 
-        int ledCount = _fanLedIds.Length;
-        var classColors = RpmColorMapper.ClassColors;
-        var (cr, cg, cb) = classColors.TryGetValue(carClass, out var c) ? c : (255, 215, 0);
+        int   ledCount  = _fanLedIds.Length;
+        var   classColors = RpmColorMapper.ClassColors;
+        var   (cr, cg, cb) = classColors.TryGetValue(carClass, out var c) ? c : (255, 215, 0);
 
-        // Aqua color for EVs
-        const byte er = 0, eg = 210, eb = 255;
+        // Fill color — lime green for D and S2, aqua for other EV classes
+        bool useLime = carClass == CarClass.D || carClass == CarClass.S2;
+        byte fr = useLime ? (byte)57  : (byte)0;
+        byte fg = useLime ? (byte)255 : (byte)210;
+        byte fb = useLime ? (byte)20  : (byte)255;
+
+        // White dot position — rotates within the filled area only
+        // Speed of rotation increases with speed
+        float rotationSpeed = 0.3f + speedNormalized * 2.0f;
+        _evDotPosition = (_evDotPosition + rotationSpeed) % ledCount;
+        int dotPos = (int)_evDotPosition;
+
+        int filledCount = (int)Math.Round(speedNormalized * ledCount);
 
         var leds = new CorsairLedColor[ledCount];
         for (int i = 0; i < ledCount; i++)
@@ -292,17 +305,25 @@ public class IcueService : IDisposable
             float ledThreshold = (float)i / ledCount;
             float blend        = Math.Clamp((speedNormalized - ledThreshold) * ledCount, 0f, 1f);
 
-            leds[i] = new CorsairLedColor
+            byte r = (byte)(cr + (fr - cr) * blend);
+            byte g = (byte)(cg + (fg - cg) * blend);
+            byte b = (byte)(cb + (fb - cb) * blend);
+
+            // White dot only in filled area
+            if (filledCount > 0 && i == dotPos % filledCount)
             {
-                id = _fanLedIds[i],
-                r  = (byte)(cr + (er - cr) * blend),
-                g  = (byte)(cg + (eg - cg) * blend),
-                b  = (byte)(cb + (eb - cb) * blend),
-                a  = 255
-            };
+                float whiteness = blend;
+                r = (byte)(r + (255 - r) * whiteness * 0.9f);
+                g = (byte)(g + (255 - g) * whiteness * 0.9f);
+                b = (byte)(b + (255 - b) * whiteness * 0.9f);
+            }
+
+            leds[i] = new CorsairLedColor { id = _fanLedIds[i], r = r, g = g, b = b, a = 255 };
         }
         CorsairApi.CorsairSetLedColors(_fanDeviceId, leds.Length, leds);
     }
+
+    private float _evDotPosition = 0f;
 
     private void StartBlink(byte r, byte g, byte b, BlinkSpeed speed = BlinkSpeed.Normal)
     {

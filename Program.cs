@@ -3,7 +3,7 @@ using ForzaRGB;
 Console.OutputEncoding = System.Text.Encoding.UTF8;
 Console.Title = "ForzaRGB - Forza Horizon 6 x iCUE LINK Sync";
 Console.WriteLine("╔════════════════════════════════════════╗");
-Console.WriteLine("║   ForzaRGB v2.9.0 — by xGhosty         ║");
+Console.WriteLine("║   ForzaRGB v2.9.4 — by xGhosty         ║");
 Console.WriteLine("║   Forza Horizon 6 x iCUE LINK RGB      ║");
 Console.WriteLine("╚════════════════════════════════════════╝\n");
 
@@ -23,6 +23,7 @@ icue.StartHeadAnimation();
 CarClass lastClass        = CarClass.Unknown;
 int      logCounter       = 0;
 float    electricTopSpeed = 0f;
+var      rpmDb            = new CarRpmDatabase();
 
 udp.OnPacketReceived += packet =>
 {
@@ -48,13 +49,28 @@ udp.OnPacketReceived += packet =>
         Console.WriteLine($"[Forza] Car class: {carClass} ({type})");
     }
 
+    if (isElectric && electricTopSpeed == 0f)
+    {
+        // Load saved topspeed for this EV on first packet
+        float? saved = rpmDb.GetEvTopSpeed(packet.CarOrdinal);
+        if (saved.HasValue)
+        {
+            electricTopSpeed = saved.Value;
+            Console.WriteLine($"[DB] EV #{packet.CarOrdinal} — saved top speed: {saved:F0} km/h");
+        }
+    }
+
     if (++logCounter >= 60)
     {
         logCounter = 0;
         if (!isElectric && rpmNorm > 0.05f)
         {
             var (r, g, b) = RpmColorMapper.GetColor(carClass, rpmNorm);
-            Console.WriteLine($"[Forza] RPM: {packet.CurrentEngineRpm:F0}/{packet.EngineMaxRpm:F0} ({rpmNorm:P0}) Gear:{gear} -> RGB({r},{g},{b})");
+            if (gear != 11) // nie pokazuj neutralu
+            {
+                string gearDisplay = gear == 0 ? "R" : gear.ToString();
+                Console.WriteLine($"[Forza] RPM: {packet.CurrentEngineRpm:F0}/{packet.EngineMaxRpm:F0} ({rpmNorm:P0}) Gear:{gearDisplay} -> RGB({r},{g},{b})");
+            }
         }
         else if (isElectric && packet.Speed > 1f)
         {
@@ -67,7 +83,10 @@ udp.OnPacketReceived += packet =>
     {
         float speedKmh = packet.Speed * 3.6f;
         if (speedKmh > electricTopSpeed)
+        {
             electricTopSpeed = speedKmh;
+            rpmDb.UpdateEvTopSpeed(packet.CarOrdinal, speedKmh);
+        }
 
         float refSpeed  = Math.Max(electricTopSpeed, 100f);
         float speedNorm = Math.Clamp(speedKmh / refSpeed, 0f, 1f);
