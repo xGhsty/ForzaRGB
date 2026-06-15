@@ -2,7 +2,6 @@
 bin/
 obj/
 
-# Dane użytkownika — nie wrzucaj na GitHub
 car_rpm_data.json
 
 # iCUE SDK DLL — pobierz osobno z https://github.com/CorsairOfficial/cue-sdk/releases
