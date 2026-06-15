@@ -257,8 +257,6 @@ public class IcueService : IDisposable
 
         _lastRpm = currentRpm;
 
-        // Blink thresholds — skip learning on gear 1, reverse (0) and neutral (11)
-        bool isFirstGear = gear == 1 || gear == 0 || gear == 11;
         float threshold1 = maxRpm * 0.80f;
         float threshold2 = _rpmLearned ? _observedMaxRpm * 0.92f : maxRpm * 0.87f;
         float threshold3 = _rpmLearned ? _observedMaxRpm * 0.98f : maxRpm * 0.93f;
