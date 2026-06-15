@@ -231,15 +231,23 @@ public class IcueService : IDisposable
                     _gearBestRpm[_lastGear] = _lastRpm;
                     _rpmSamples.Add(_lastRpm);
 
-                    if (_rpmSamples.Count >= 3)
+                    if (_rpmSamples.Count >= 2)
                     {
-                        float median = _rpmSamples.OrderBy(x => x).ElementAt(_rpmSamples.Count / 2);
-                        if (median > _observedMaxRpm)
+                        float min   = _rpmSamples.Min();
+                        float max   = _rpmSamples.Max();
+                        float spread = max - min;
+                        bool consistent = spread < maxRpm * 0.05f; // < 5% rozrzutu
+
+                        if (consistent || _rpmSamples.Count >= 4)
                         {
-                            _observedMaxRpm = median;
-                            _rpmLearned     = true;
-                            _rpmDb.UpdateMaxRpm(carOrdinal, maxRpm, median);
-                            Console.WriteLine($"[DB] Car #{carOrdinal} — learned redline: {median:F0} RPM ({median/maxRpm:P0})");
+                            float median = _rpmSamples.OrderBy(x => x).ElementAt(_rpmSamples.Count / 2);
+                            if (median > _observedMaxRpm)
+                            {
+                                _observedMaxRpm = median;
+                                _rpmLearned     = true;
+                                _rpmDb.UpdateMaxRpm(carOrdinal, maxRpm, median);
+                                Console.WriteLine($"[DB] Car #{carOrdinal} — learned redline: {median:F0} RPM ({median/maxRpm:P0}) [{_rpmSamples.Count} samples, spread: {spread:F0} RPM]");
+                            }
                         }
                     }
                 }
