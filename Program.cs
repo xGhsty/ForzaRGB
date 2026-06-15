@@ -3,7 +3,7 @@ using ForzaRGB;
 Console.OutputEncoding = System.Text.Encoding.UTF8;
 Console.Title = "ForzaRGB - Forza Horizon 6 x iCUE LINK Sync";
 Console.WriteLine("╔════════════════════════════════════════╗");
-Console.WriteLine("║   ForzaRGB v2.9.6 — by xGhosty         ║");
+Console.WriteLine("║   ForzaRGB v2.9.8 — by xGhosty         ║");
 Console.WriteLine("║   Forza Horizon 6 x iCUE LINK RGB      ║");
 Console.WriteLine("╚════════════════════════════════════════╝\n");
 
@@ -27,7 +27,7 @@ var      rpmDb            = new CarRpmDatabase();
 
 udp.OnPacketReceived += packet =>
 {
-    if (!packet.IsGameActive())
+    if (!packet.IsGameActive() || packet.Speed < 1f)
     {
         icue.StartIdleAnimation();
         return;
@@ -96,7 +96,8 @@ udp.OnPacketReceived += packet =>
     {
         icue.SetColorFromClassAndRpm(carClass, rpmNorm, gear,
                                      packet.CurrentEngineRpm, packet.EngineMaxRpm,
-                                     packet.EngineIdleRpm, packet.CarOrdinal);
+                                     packet.EngineIdleRpm, packet.CarOrdinal,
+                                     packet.Speed * 3.6f);
     }
 };
 

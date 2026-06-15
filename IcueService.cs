@@ -192,7 +192,7 @@ public class IcueService : IDisposable
     }
 
     public void SetColorFromClassAndRpm(CarClass carClass, float rpmNormalized, int gear,
-                                        float currentRpm, float maxRpm, float idleRpm, int carOrdinal)
+                                        float currentRpm, float maxRpm, float idleRpm, int carOrdinal, float speedKmh)
     {
         var (r, g, b) = RpmColorMapper.GetColor(carClass, rpmNormalized);
 
@@ -216,13 +216,14 @@ public class IcueService : IDisposable
                 Console.WriteLine($"[DB] Car #{carOrdinal} — unknown config, learning redline...");
         }
 
-        // Sample RPM at gear change — only when previous gear had high RPM
+        // Sample RPM at gear change — only when moving (not in garage/tuning)
         if (gear != _lastGear)
         {
             bool prevGearValid = _lastGear >= 2 && _lastGear <= 10 && _lastGear != 11;
             bool prevRpmValid  = _lastRpm >= maxRpm * 0.80f && _lastRpm <= maxRpm * 0.93f;
+            bool isMoving      = speedKmh > 5f;
 
-            if (prevGearValid && prevRpmValid && _fakeReadingCooldown == 0)
+            if (prevGearValid && prevRpmValid && isMoving && _fakeReadingCooldown == 0)
             {
                 float prevBest = _gearBestRpm.GetValueOrDefault(_lastGear, 0f);
                 if (_lastRpm > prevBest)
