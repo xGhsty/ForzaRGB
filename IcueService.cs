@@ -292,10 +292,8 @@ public class IcueService : IDisposable
         byte fb = useLime ? (byte)20  : (byte)255;
 
         // White dot position — rotates within the filled area only
-        // Speed of rotation increases with speed
-        float rotationSpeed = 0.3f + speedNormalized * 2.0f;
-        _evDotPosition = (_evDotPosition + rotationSpeed) % ledCount;
-        int dotPos = (int)_evDotPosition;
+        float rotationSpeed = 0.05f + speedNormalized * 0.5f;
+        _evDotPosition = (_evDotPosition + rotationSpeed) % Math.Max(ledCount, 1);
 
         int filledCount = (int)Math.Round(speedNormalized * ledCount);
 
@@ -309,13 +307,23 @@ public class IcueService : IDisposable
             byte g = (byte)(cg + (fg - cg) * blend);
             byte b = (byte)(cb + (fb - cb) * blend);
 
-            // White dot only in filled area
-            if (filledCount > 0 && i == dotPos % filledCount)
+            // White dot — 3 LEDs wide, only in filled area, smooth falloff
+            if (filledCount > 0)
             {
-                float whiteness = blend;
-                r = (byte)(r + (255 - r) * whiteness * 0.9f);
-                g = (byte)(g + (255 - g) * whiteness * 0.9f);
-                b = (byte)(b + (255 - b) * whiteness * 0.9f);
+                int   dotCenter   = (int)_evDotPosition % filledCount;
+                float distToCenter = Math.Min(
+                    Math.Abs(i - dotCenter),
+                    Math.Abs(i - dotCenter + filledCount) // wrap-around
+                );
+                distToCenter = Math.Min(distToCenter, Math.Abs(i - dotCenter - filledCount));
+
+                if (i < filledCount && distToCenter <= 1.5f)
+                {
+                    float whiteness = blend * (1f - distToCenter / 1.5f); // falloff from center
+                    r = (byte)(r + (255 - r) * whiteness);
+                    g = (byte)(g + (255 - g) * whiteness);
+                    b = (byte)(b + (255 - b) * whiteness);
+                }
             }
 
             leds[i] = new CorsairLedColor { id = _fanLedIds[i], r = r, g = g, b = b, a = 255 };
