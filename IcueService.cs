@@ -14,6 +14,7 @@ public class IcueService : IDisposable
 
     private readonly CorsairSessionStateChangedHandler _sessionCallback;
     private volatile bool _sessionConnected = false;
+    public Action<string> Log { get; set; } = Console.WriteLine;
 
     // Blink speeds in ms (on/off)
     public enum BlinkSpeed { Slow, Normal, Fast }

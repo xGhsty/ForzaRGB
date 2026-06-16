@@ -3,7 +3,7 @@ using ForzaRGB;
 Console.OutputEncoding = System.Text.Encoding.UTF8;
 Console.Title = "ForzaRGB - Forza Horizon 6 x iCUE LINK Sync";
 Console.WriteLine("╔════════════════════════════════════════╗");
-Console.WriteLine("║   ForzaRGB v3.0.0 — by xGhosty         ║");
+Console.WriteLine("║   ForzaRGB v3.0.4 — by xGhosty         ║");
 Console.WriteLine("║   Forza Horizon 6 x iCUE LINK RGB      ║");
 Console.WriteLine("╚════════════════════════════════════════╝\n");
 
@@ -25,9 +25,13 @@ int      logCounter       = 0;
 float    electricTopSpeed = 0f;
 var      rpmDb            = new CarRpmDatabase();
 
+Console.WriteLine("\nRunning. Press Q to quit.");
+Console.WriteLine("Waiting for Forza Horizon 6...");
+Console.WriteLine("(Settings -> Telemetry -> 127.0.0.1:7777)\n");
+
 udp.OnPacketReceived += packet =>
 {
-    if (!packet.IsGameActive())
+    if (!packet.IsGameActive() || (packet.CurrentEngineRpm == 0 && packet.Speed == 0))
     {
         icue.StartIdleAnimation();
         return;
@@ -51,7 +55,6 @@ udp.OnPacketReceived += packet =>
 
     if (isElectric && electricTopSpeed == 0f)
     {
-        // Load saved topspeed for this EV on first packet
         float? saved = rpmDb.GetEvTopSpeed(packet.CarOrdinal);
         if (saved.HasValue)
         {
@@ -63,19 +66,16 @@ udp.OnPacketReceived += packet =>
     if (++logCounter >= 60)
     {
         logCounter = 0;
-        if (!isElectric && rpmNorm > 0.05f)
+
+        if (!isElectric && rpmNorm > 0.05f && gear != 11)
         {
             var (r, g, b) = RpmColorMapper.GetColor(carClass, rpmNorm);
-            if (gear != 11) // nie pokazuj neutralu
-            {
-                string gearDisplay = gear == 0 ? "R" : gear.ToString();
-                Console.WriteLine($"[Forza] RPM: {packet.CurrentEngineRpm:F0}/{packet.EngineMaxRpm:F0} ({rpmNorm:P0}) Gear:{gearDisplay} -> RGB({r},{g},{b})");
-            }
+            string gearDisplay = gear == 0 ? "R" : gear.ToString();
+            Console.WriteLine($"[Forza] RPM: {packet.CurrentEngineRpm:F0}/{packet.EngineMaxRpm:F0} ({rpmNorm:P0}) Gear:{gearDisplay} -> RGB({r},{g},{b})");
         }
         else if (isElectric && packet.Speed > 1f)
         {
-            float speedKmh = packet.Speed * 3.6f;
-            Console.WriteLine($"[Forza] Electric - speed: {speedKmh:F0} km/h");
+            Console.WriteLine($"[Forza] Electric - speed: {packet.Speed * 3.6f:F0} km/h");
         }
     }
 
@@ -108,10 +108,6 @@ udp.OnConnectionLost += () =>
 };
 
 udp.Start();
-
-Console.WriteLine("\nRunning. Press Q to quit.\n");
-Console.WriteLine("Waiting for Forza Horizon 6...");
-Console.WriteLine("(Settings -> Telemetry -> 127.0.0.1:7777)\n");
 
 while (Console.ReadKey(intercept: true).Key != ConsoleKey.Q) { }
 
