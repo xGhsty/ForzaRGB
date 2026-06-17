@@ -131,15 +131,15 @@ FH6 UDP telemetry (port 7777)
 | RPM range | Color |
 |-----------|-------|
 | 0–60% | Car class color (darkening) |
-| 60–90% | Transition to red |
-| 90%+ | Pure red `(255, 0, 0)` |
+| 60–82% | Transition to red |
+| 82%+ | Pure red `(255, 0, 0)` |
 
 ### Blink stages
 
 | Stage | Speed | Threshold |
 |-------|-------|-----------|
-| 1 - slow | 150ms | 80% max RPM |
-| 2 - normal | 110ms | ~92% learned max |
+| 1 - slow | 150ms | 85% max RPM |
+| 2 - normal | 100ms | ~92% learned max |
 | 3 - fast | 35ms | ~98% learned max (true redline) |
 
 ### Car class colors (matching in-game badges)
@@ -174,6 +174,6 @@ FH6 UDP telemetry (port 7777)
 
 ## 📄 License
 
-© 2026 xGhosty - [CC BY-NC-ND 4.0](LICENSE)
+© 2026 TheGhostey - [CC BY-NC-ND 4.0](LICENSE)
 
 You may share this project freely for non-commercial purposes with attribution. You may not modify and redistribute it, and you may not use it commercially.

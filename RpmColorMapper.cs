@@ -23,7 +23,7 @@ public static class RpmColorMapper
 
     private const float DarkFactor    = 0.15f;
     private const float RedlineStart  = 0.60f;
-    private const float RedlineFullAt = 0.90f;
+    private const float RedlineFullAt = 0.82f;
 
     private static readonly (int R, int G, int B) RedlineColor = (255, 0, 0);
 

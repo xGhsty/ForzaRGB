@@ -19,7 +19,7 @@ public class IcueService : IDisposable
     // Blink speeds in ms (on/off)
     public enum BlinkSpeed { Slow, Normal, Fast }
     private const int BlinkSlowOnMs  = 150, BlinkSlowOffMs  = 150;
-    private const int BlinkOnMs      = 110, BlinkOffMs      = 110;
+    private const int BlinkOnMs      = 100, BlinkOffMs      = 100;
     private const int BlinkFastOnMs  =  35, BlinkFastOffMs  =  35;
 
     private volatile bool       _blinkActive = false;
@@ -220,6 +220,7 @@ public class IcueService : IDisposable
         // Sample RPM at gear change — only when moving (not in garage/tuning)
         if (gear != _lastGear)
         {
+            StopBlink(); // zatrzymaj miganie przy zmianie biegu
             bool prevGearValid = _lastGear >= 2 && _lastGear <= 10 && _lastGear != 11;
             bool prevRpmValid  = _lastRpm >= maxRpm * 0.80f && _lastRpm <= maxRpm * 0.93f;
             bool isMoving      = speedKmh > 5f;
@@ -266,7 +267,7 @@ public class IcueService : IDisposable
 
         _lastRpm = currentRpm;
 
-        float threshold1 = maxRpm * 0.80f;
+        float threshold1 = maxRpm * 0.85f;
         float threshold2 = _rpmLearned ? _observedMaxRpm * 0.92f : maxRpm * 0.87f;
         float threshold3 = _rpmLearned ? _observedMaxRpm * 0.98f : maxRpm * 0.93f;
         float blinkOff   = threshold1 * 0.94f;
