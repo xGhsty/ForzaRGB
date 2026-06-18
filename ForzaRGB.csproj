@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
+    <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -10,8 +10,6 @@
     <RootNamespace>ForzaRGB</RootNamespace>
     <Platforms>x64</Platforms>
     <ApplicationIcon>app.ico</ApplicationIcon>
-	<RuntimeIdentifier>win-x64</RuntimeIdentifier>
-	<SelfContained>true</SelfContained>
   </PropertyGroup>
 
 </Project>

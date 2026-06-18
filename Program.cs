@@ -1,9 +1,22 @@
 using ForzaRGB;
 
+// Global exception handler — catch any unhandled crash
+AppDomain.CurrentDomain.UnhandledException += (sender, e) =>
+{
+    Console.WriteLine($"\n[CRASH] Unhandled exception: {e.ExceptionObject}");
+    Console.WriteLine("\nPress any key to exit...");
+    Console.ReadKey();
+};
+
+// Allocate console window for WinExe
+[System.Runtime.InteropServices.DllImport("kernel32.dll")]
+static extern bool AllocConsole();
+AllocConsole();
+
 Console.OutputEncoding = System.Text.Encoding.UTF8;
 Console.Title = "ForzaRGB - Forza Horizon 6 x iCUE LINK Sync";
 Console.WriteLine("╔════════════════════════════════════════╗");
-Console.WriteLine("║   ForzaRGB v3.0.5 — by xGhosty         ║");
+Console.WriteLine("║   ForzaRGB v3.0.7 — by xGhosty         ║");
 Console.WriteLine("║   Forza Horizon 6 x iCUE LINK RGB      ║");
 Console.WriteLine("╚════════════════════════════════════════╝\n");
 
