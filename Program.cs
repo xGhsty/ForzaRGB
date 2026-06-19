@@ -16,7 +16,7 @@ AllocConsole();
 Console.OutputEncoding = System.Text.Encoding.UTF8;
 Console.Title = "ForzaRGB - Forza Horizon 6 x iCUE LINK Sync";
 Console.WriteLine("╔════════════════════════════════════════╗");
-Console.WriteLine("║   ForzaRGB v3.0.8 — by xGhosty         ║");
+Console.WriteLine("║   ForzaRGB v3.0.9 — by xGhosty         ║");
 Console.WriteLine("║   Forza Horizon 6 x iCUE LINK RGB      ║");
 Console.WriteLine("╚════════════════════════════════════════╝\n");
 
@@ -118,6 +118,16 @@ udp.OnConnectionLost += () =>
 {
     lastClass = CarClass.Unknown;
     icue.StartIdleAnimation();
+};
+
+// Handle system resume after sleep — restart UDP listener
+Microsoft.Win32.SystemEvents.PowerModeChanged += (sender, e) =>
+{
+    if (e.Mode == Microsoft.Win32.PowerModes.Resume)
+    {
+        Console.WriteLine("[System] Resumed from sleep — restarting...");
+        udp.Restart();
+    }
 };
 
 udp.Start();

@@ -491,15 +491,25 @@ public class IcueService : IDisposable
 
     public void Dispose()
     {
-        if (_connected)
+        if (!_connected) return;
+
+        StopBlink();
+        StopIdleAnimation();
+        StopHeadAnimation();
+
+        // Disconnect with timeout — SDK may hang after sleep
+        var disconnectTask = Task.Run(() =>
         {
-            StopBlink();
-            StopIdleAnimation();
-            StopHeadAnimation();
-            SetIdleColor();
-            Thread.Sleep(100);
-            CorsairApi.CorsairDisconnect();
-            _connected = false;
-        }
+            try
+            {
+                SetIdleColor();
+                Thread.Sleep(100);
+                CorsairApi.CorsairDisconnect();
+            }
+            catch { /* ignore errors during shutdown */ }
+        });
+
+        disconnectTask.Wait(TimeSpan.FromSeconds(2));
+        _connected = false;
     }
 }
