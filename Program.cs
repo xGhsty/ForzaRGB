@@ -16,7 +16,7 @@ AllocConsole();
 Console.OutputEncoding = System.Text.Encoding.UTF8;
 Console.Title = "ForzaRGB - Forza Horizon 6 x iCUE LINK Sync";
 Console.WriteLine("╔════════════════════════════════════════╗");
-Console.WriteLine("║   ForzaRGB v3.0.7 — by xGhosty         ║");
+Console.WriteLine("║   ForzaRGB v3.0.8 — by xGhosty         ║");
 Console.WriteLine("║   Forza Horizon 6 x iCUE LINK RGB      ║");
 Console.WriteLine("╚════════════════════════════════════════╝\n");
 
@@ -40,7 +40,7 @@ var      rpmDb            = new CarRpmDatabase();
 
 Console.WriteLine("\nRunning. Press Q to quit.");
 Console.WriteLine("Waiting for Forza Horizon 6...");
-Console.WriteLine("(Settings -> Telemetry -> 127.0.0.1:7777)\n");
+Console.WriteLine("(Settings -> HUD and Gameplay -> Telemetry -> 127.0.0.1:7777)\n");
 
 udp.OnPacketReceived += packet =>
 {
