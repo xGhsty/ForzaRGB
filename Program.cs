@@ -16,7 +16,7 @@ AllocConsole();
 Console.OutputEncoding = System.Text.Encoding.UTF8;
 Console.Title = "ForzaRGB - Forza Horizon 6 x iCUE LINK Sync";
 Console.WriteLine("╔════════════════════════════════════════╗");
-Console.WriteLine("║   ForzaRGB v3.0.9 — by xGhosty         ║");
+Console.WriteLine("║   ForzaRGB v3.0.10 — by xGhosty        ║");
 Console.WriteLine("║   Forza Horizon 6 x iCUE LINK RGB      ║");
 Console.WriteLine("╚════════════════════════════════════════╝\n");
 
@@ -37,10 +37,11 @@ CarClass lastClass        = CarClass.Unknown;
 int      logCounter       = 0;
 float    electricTopSpeed = 0f;
 var      rpmDb            = new CarRpmDatabase();
+int      totalLines       = 0;
 
 Console.WriteLine("\nRunning. Press Q to quit.");
 Console.WriteLine("Waiting for Forza Horizon 6...");
-Console.WriteLine("(Settings -> HUD and Gameplay -> Telemetry -> 127.0.0.1:7777)\n");
+Console.WriteLine("(Settings -> Telemetry -> 127.0.0.1:7777)\n");
 
 udp.OnPacketReceived += packet =>
 {
@@ -63,7 +64,7 @@ udp.OnPacketReceived += packet =>
         lastClass        = carClass;
         electricTopSpeed = 0f;
         string type = isElectric ? "electric [EV]" : "combustion";
-        Console.WriteLine($"[Forza] Car class: {carClass} ({type})");
+        Log($"[Forza] Car class: {carClass} ({type})");
     }
 
     if (isElectric && electricTopSpeed == 0f)
@@ -72,7 +73,7 @@ udp.OnPacketReceived += packet =>
         if (saved.HasValue)
         {
             electricTopSpeed = saved.Value;
-            Console.WriteLine($"[DB] EV #{packet.CarOrdinal} — saved top speed: {saved:F0} km/h");
+            Log($"[DB] EV #{packet.CarOrdinal} — saved top speed: {saved:F0} km/h");
         }
     }
 
@@ -84,11 +85,11 @@ udp.OnPacketReceived += packet =>
         {
             var (r, g, b) = RpmColorMapper.GetColor(carClass, rpmNorm);
             string gearDisplay = gear == 0 ? "R" : gear.ToString();
-            Console.WriteLine($"[Forza] RPM: {packet.CurrentEngineRpm:F0}/{packet.EngineMaxRpm:F0} ({rpmNorm:P0}) Gear:{gearDisplay} -> RGB({r},{g},{b})");
+            Log($"[Forza] RPM: {packet.CurrentEngineRpm:F0}/{packet.EngineMaxRpm:F0} ({rpmNorm:P0}) Gear:{gearDisplay} -> RGB({r},{g},{b})");
         }
         else if (isElectric && packet.Speed > 1f)
         {
-            Console.WriteLine($"[Forza] Electric - speed: {packet.Speed * 3.6f:F0} km/h");
+            Log($"[Forza] Electric - speed: {packet.Speed * 3.6f:F0} km/h");
         }
     }
 
@@ -125,13 +126,30 @@ Microsoft.Win32.SystemEvents.PowerModeChanged += (sender, e) =>
 {
     if (e.Mode == Microsoft.Win32.PowerModes.Resume)
     {
-        Console.WriteLine("[System] Resumed from sleep — restarting...");
+        Log("[System] Resumed from sleep — restarting...");
         udp.Restart();
     }
 };
 
 udp.Start();
 
+icue.Log = Log;
+
 while (Console.ReadKey(intercept: true).Key != ConsoleKey.Q) { }
 
 Console.WriteLine("\nShutting down...");
+
+void Log(string line)
+{
+    if (totalLines >= 200)
+    {
+        Console.Clear();
+        Console.WriteLine("╔════════════════════════════════════════╗");
+        Console.WriteLine("║   ForzaRGB v3.0.10 — by xGhosty        ║");
+        Console.WriteLine("║   Forza Horizon 6 x iCUE LINK RGB      ║");
+        Console.WriteLine("╚════════════════════════════════════════╝\n");
+        totalLines = 0;
+    }
+    Console.WriteLine(line);
+    totalLines++;
+}
