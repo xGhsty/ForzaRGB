@@ -16,7 +16,7 @@ AllocConsole();
 Console.OutputEncoding = System.Text.Encoding.UTF8;
 Console.Title = "ForzaRGB - Forza Horizon 6 x iCUE LINK Sync";
 Console.WriteLine("╔════════════════════════════════════════╗");
-Console.WriteLine("║   ForzaRGB v3.0.10 — by xGhosty        ║");
+Console.WriteLine("║   ForzaRGB v3.0.11 — by xGhosty        ║");
 Console.WriteLine("║   Forza Horizon 6 x iCUE LINK RGB      ║");
 Console.WriteLine("╚════════════════════════════════════════╝\n");
 
@@ -145,7 +145,7 @@ void Log(string line)
     {
         Console.Clear();
         Console.WriteLine("╔════════════════════════════════════════╗");
-        Console.WriteLine("║   ForzaRGB v3.0.10 — by xGhosty        ║");
+        Console.WriteLine("║   ForzaRGB v3.0.11 — by xGhosty        ║");
         Console.WriteLine("║   Forza Horizon 6 x iCUE LINK RGB      ║");
         Console.WriteLine("╚════════════════════════════════════════╝\n");
         totalLines = 0;

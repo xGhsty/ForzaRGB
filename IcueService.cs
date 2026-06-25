@@ -267,9 +267,12 @@ public class IcueService : IDisposable
 
         _lastRpm = currentRpm;
 
-        float threshold1 = maxRpm * 0.85f;
-        float threshold2 = _rpmLearned ? _observedMaxRpm * 0.92f : maxRpm * 0.87f;
-        float threshold3 = _rpmLearned ? _observedMaxRpm * 0.98f : maxRpm * 0.93f;
+        // Progi migania — dynamiczne względem nauczanego redline
+        // Przed nauką: stały próg 80% maxRpm dla wszystkich etapów (fallback)
+        float redline    = _rpmLearned ? _observedMaxRpm : maxRpm * 0.80f;
+        float threshold1 = redline * 0.88f;  // Slow  — 88% redline
+        float threshold2 = redline * 0.94f;  // Normal — 94% redline
+        float threshold3 = redline * 0.99f;  // Fast  — 99% redline
         float blinkOff   = threshold1 * 0.94f;
 
         if (currentRpm >= threshold3)
