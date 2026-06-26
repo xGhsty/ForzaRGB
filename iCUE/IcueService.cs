@@ -43,6 +43,9 @@ public class IcueService : IDisposable
     private float                  _lastRpm              = 0f;
     private List<float>            _rpmSamples           = new();
     private Dictionary<int, float> _gearBestRpm          = new();
+    private List<float>            _plateauRpmBuffer     = new();
+    private List<float>            _plateauSpeedBuffer   = new();
+    private List<float>            _plateauPowerBuffer   = new();
     private CarRpmDatabase         _rpmDb                = new();
 
     // Idle animation palette — FH6 colors
@@ -193,7 +196,7 @@ public class IcueService : IDisposable
     }
 
     public void SetColorFromClassAndRpm(CarClass carClass, float rpmNormalized, int gear,
-                                        float currentRpm, float maxRpm, float idleRpm, int carOrdinal, float speedKmh)
+                                        float currentRpm, float maxRpm, float idleRpm, int carOrdinal, float speedKmh, float power)
     {
         var (r, g, b) = RpmColorMapper.GetColor(carClass, rpmNormalized);
 
@@ -210,6 +213,9 @@ public class IcueService : IDisposable
             _lastRpm             = 0f;
             _rpmSamples.Clear();
             _gearBestRpm.Clear();
+            _plateauRpmBuffer.Clear();
+            _plateauSpeedBuffer.Clear();
+            _plateauPowerBuffer.Clear();
 
             if (saved.HasValue)
                 Console.WriteLine($"[DB] Car #{carOrdinal} — saved redline: {saved:F0} RPM");
@@ -217,15 +223,22 @@ public class IcueService : IDisposable
                 Console.WriteLine($"[DB] Car #{carOrdinal} — unknown config, learning redline...");
         }
 
-        // Sample RPM at gear change — only when moving (not in garage/tuning)
+        // Zatrzymaj miganie przy zmianie biegu
         if (gear != _lastGear)
         {
-            StopBlink(); // zatrzymaj miganie przy zmianie biegu
-            bool prevGearValid = _lastGear >= 2 && _lastGear <= 10 && _lastGear != 11;
-            bool prevRpmValid  = _lastRpm >= maxRpm * 0.80f && _lastRpm <= maxRpm * 0.93f;
-            bool isMoving      = speedKmh > 5f;
+            StopBlink();
 
-            if (prevGearValid && prevRpmValid && isMoving && _fakeReadingCooldown == 0)
+            bool prevGearValid = _lastGear >= 2 && _lastGear <= 10 && _lastGear != 11;
+            bool prevRpmValid  = _lastRpm >= maxRpm * 0.75f;
+            bool isMoving      = speedKmh > 5f;
+            bool noFake        = _fakeReadingCooldown == 0;
+
+            // Moc była dodatnia przed zmianą biegu = silnik pracował, nie hamował
+            // Ujemna moc = engine braking (puszczony gaz przed zmianą biegu)
+            bool powerStable = _plateauPowerBuffer.Count >= 5 &&
+                               _plateauPowerBuffer.Max() > 50000f;
+
+            if (prevGearValid && prevRpmValid && isMoving && noFake && powerStable)
             {
                 float prevBest = _gearBestRpm.GetValueOrDefault(_lastGear, 0f);
                 if (_lastRpm > prevBest)
@@ -235,10 +248,10 @@ public class IcueService : IDisposable
 
                     if (_rpmSamples.Count >= 2)
                     {
-                        float min   = _rpmSamples.Min();
-                        float max   = _rpmSamples.Max();
+                        float min    = _rpmSamples.Min();
+                        float max    = _rpmSamples.Max();
                         float spread = max - min;
-                        bool consistent = spread < maxRpm * 0.05f; // < 5% rozrzutu
+                        bool consistent = spread < maxRpm * 0.05f;
 
                         if (consistent || _rpmSamples.Count >= 4)
                         {
@@ -255,8 +268,15 @@ public class IcueService : IDisposable
                 }
             }
 
+            // Resetuj bufor tylko gdy to prawdziwa zmiana biegu, nie przejście przez neutral
+            if (gear != 11)
+            {
+                _plateauRpmBuffer.Clear();
+                _plateauSpeedBuffer.Clear();
+                _plateauPowerBuffer.Clear();
+            }
             _lastGear       = gear;
-            _gearChangeSkip = 30;
+            _gearChangeSkip = gear == 11 ? 0 : 30;
         }
         if (_gearChangeSkip > 0) _gearChangeSkip--;
 
@@ -265,14 +285,39 @@ public class IcueService : IDisposable
         else if (_fakeReadingCooldown > 0)
             _fakeReadingCooldown--;
 
+        if (_lastRpm - currentRpm > 500f)
+        {
+            _plateauRpmBuffer.Clear();
+            _plateauSpeedBuffer.Clear();
+            _plateauPowerBuffer.Clear();
+            _fakeReadingCooldown = 30;
+        }
+
         _lastRpm = currentRpm;
 
-        // Progi migania — dynamiczne względem nauczanego redline
-        // Przed nauką: stały próg 80% maxRpm dla wszystkich etapów (fallback)
-        float redline    = _rpmLearned ? _observedMaxRpm : maxRpm * 0.80f;
-        float threshold1 = redline * 0.88f;  // Slow  — 88% redline
-        float threshold2 = redline * 0.94f;  // Normal — 94% redline
-        float threshold3 = redline * 0.99f;  // Fast  — 99% redline
+        // Zbieraj bufor mocy ciągle — służy do oceny jakości próbki przy zmianie biegu
+        bool validGear = gear >= 2 && gear <= 10 && gear != 11;
+        bool moving    = speedKmh > 5f;
+
+        if (validGear && moving && _gearChangeSkip == 0)
+        {
+            _plateauRpmBuffer.Add(currentRpm);
+            _plateauSpeedBuffer.Add(speedKmh);
+            _plateauPowerBuffer.Add(power);
+
+            if (_plateauRpmBuffer.Count > 10)
+            {
+                _plateauRpmBuffer.RemoveAt(0);
+                _plateauSpeedBuffer.RemoveAt(0);
+                _plateauPowerBuffer.RemoveAt(0);
+            }
+        }
+
+        // Progi migania
+        float redline    = _rpmLearned ? _observedMaxRpm : maxRpm * 0.92f;
+        float threshold1 = redline * 0.90f;  // Slow   — 90% redline
+        float threshold2 = redline * 0.95f;  // Normal — 95% redline
+        float threshold3 = redline * 0.99f;  // Fast   — 99% redline
         float blinkOff   = threshold1 * 0.94f;
 
         if (currentRpm >= threshold3)

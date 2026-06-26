@@ -16,7 +16,7 @@ AllocConsole();
 Console.OutputEncoding = System.Text.Encoding.UTF8;
 Console.Title = "ForzaRGB - Forza Horizon 6 x iCUE LINK Sync";
 Console.WriteLine("╔════════════════════════════════════════╗");
-Console.WriteLine("║   ForzaRGB v3.0.11 — by xGhosty        ║");
+Console.WriteLine("║   ForzaRGB v3.1.0 — by xGhosty         ║");
 Console.WriteLine("║   Forza Horizon 6 x iCUE LINK RGB      ║");
 Console.WriteLine("╚════════════════════════════════════════╝\n");
 
@@ -85,7 +85,8 @@ udp.OnPacketReceived += packet =>
         {
             var (r, g, b) = RpmColorMapper.GetColor(carClass, rpmNorm);
             string gearDisplay = gear == 0 ? "R" : gear.ToString();
-            Log($"[Forza] RPM: {packet.CurrentEngineRpm:F0}/{packet.EngineMaxRpm:F0} ({rpmNorm:P0}) Gear:{gearDisplay} -> RGB({r},{g},{b})");
+            float  speedKmhLog = packet.Speed * 3.6f;
+            Log($"[Forza] RPM: {packet.CurrentEngineRpm:F0}/{packet.EngineMaxRpm:F0} ({rpmNorm:P0}) Gear:{gearDisplay} Speed:{speedKmhLog:F0}km/h -> RGB({r},{g},{b})");
         }
         else if (isElectric && packet.Speed > 1f)
         {
@@ -111,7 +112,7 @@ udp.OnPacketReceived += packet =>
         icue.SetColorFromClassAndRpm(carClass, rpmNorm, gear,
                                      packet.CurrentEngineRpm, packet.EngineMaxRpm,
                                      packet.EngineIdleRpm, packet.CarOrdinal,
-                                     packet.Speed * 3.6f);
+                                     packet.Speed * 3.6f, packet.Power);
     }
 };
 
@@ -145,7 +146,7 @@ void Log(string line)
     {
         Console.Clear();
         Console.WriteLine("╔════════════════════════════════════════╗");
-        Console.WriteLine("║   ForzaRGB v3.0.11 — by xGhosty        ║");
+        Console.WriteLine("║   ForzaRGB v3.1.0 — by xGhosty         ║");
         Console.WriteLine("║   Forza Horizon 6 x iCUE LINK RGB      ║");
         Console.WriteLine("╚════════════════════════════════════════╝\n");
         totalLines = 0;

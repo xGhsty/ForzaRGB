@@ -23,7 +23,7 @@ public class ForzaUdpService : IDisposable
         _udpClient = new UdpClient(_port);
 
         Console.WriteLine($"[UDP] Listening on port {_port}...");
-        Console.WriteLine($"[UDP] In FH6: Settings → HUD and Gameplay → Telemetry → IP 127.0.0.1 → Port {_port}");
+        Console.WriteLine($"[UDP] In FH6: Settings → Telemetry → IP 127.0.0.1 → Port {_port}");
 
         _ = Task.Run(() => ReceiveLoop(_cts.Token));
     }

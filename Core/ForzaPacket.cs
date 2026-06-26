@@ -53,7 +53,7 @@ public struct ForzaSledPacket
     public ushort LapNumber;
     public byte   RacePosition;
     public byte   Accel, Brake, Clutch, HandBrake;
-    public byte   Gear;   // 0=reverse, 1-10=gears
+    public byte   Gear;   // 0=neutral, 1-10=gears, 11+=reverse
     public sbyte  Steer;
     public sbyte  NormalizedDrivingLine;
     public sbyte  NormalizedAIBrakeDifference;
